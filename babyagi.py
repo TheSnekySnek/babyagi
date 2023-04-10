@@ -233,6 +233,7 @@ def execution_agent(objective: str, task: str) -> str:
     You are an AI who performs one task based on the following objective: {objective}\n.
     Take into account these previously completed tasks: {context}\n.
     You can only answer with RETURN(<value>) when your task is complete with the value you want to return. You can also use BASH(<command>) to execute a bash command and return the output. You can also use WEB(<url>) to extract the text from a webpage.
+    Any input I give you after this prompt will be the result of the command you execute.
     The commands are executed on an Ubuntu 20.04 server.
     Your task: {task}\nResponse:"""
     pastMessages = [{"role": "system", "content": prompt}]
@@ -243,6 +244,7 @@ def execution_agent(objective: str, task: str) -> str:
                 messages=pastMessages
             )
             response = response.choices[0].message.content.strip()
+            print(response)
             pastMessages.append({"role": "assistant", "content": response})
             task_return = ""
             if response.startswith("RETURN(") and response.endswith(")"):
@@ -252,7 +254,7 @@ def execution_agent(objective: str, task: str) -> str:
             elif response.startswith("WEB(") and response.endswith(")"):
                 task_return =pageExtractor(response[4:-1])
 
-            pastMessages.append({"role": "program", "content": task_return})
+            pastMessages.append({"role": "user", "content": task_return})
         except openai.error.RateLimitError:
             print(
                 "The OpenAI API rate limit has been exceeded. Waiting 10 seconds and trying again."
