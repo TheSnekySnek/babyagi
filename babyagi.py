@@ -5,6 +5,7 @@ import time
 from collections import deque
 from typing import Dict, List
 import importlib
+from plugins import bashExecuter, pageExtractor
 
 import openai
 import pinecone
@@ -213,7 +214,7 @@ def prioritization_agent(this_task_id: int):
             task_list.append({"task_id": task_id, "task_name": task_name})
 
 
-def execution_agent(objective: str, task: str) -> str:
+def execution_agent_old(objective: str, task: str) -> str:
     context = context_agent(query=objective, n=5)
     # print("\n*******RELEVANT CONTEXT******\n")
     # print(context)
@@ -223,6 +224,41 @@ def execution_agent(objective: str, task: str) -> str:
     Your task: {task}\nResponse:"""
     return openai_call(prompt, temperature=0.7, max_tokens=2000)
 
+
+def execution_agent(objective: str, task: str) -> str:
+    context = context_agent(query=objective, n=5)
+    # print("\n*******RELEVANT CONTEXT******\n")
+    # print(context)
+    prompt = f"""
+    You are an AI who performs one task based on the following objective: {objective}\n.
+    Take into account these previously completed tasks: {context}\n.
+    You can only answer with RETURN(<value>) when your task is complete with the value you want to return. You can also use BASH(<command>) to execute a bash command and return the output. You can also use WEB(<url>) to extract the text from a webpage.
+    The commands are executed on an Ubuntu 20.04 server.
+    Your task: {task}\nResponse:"""
+    pastMessages = [{"role": "system", "content": prompt}]
+    while True:
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=pastMessages
+            )
+            response = response.choices[0].message.content.strip()
+            pastMessages.append({"role": "assistant", "content": response})
+            task_return = ""
+            if response.startswith("RETURN(") and response.endswith(")"):
+                return response[7:-1]
+            elif response.startswith("BASH(") and response.endswith(")"):
+                task_return = bashExecuter(response[5:-1])
+            elif response.startswith("WEB(") and response.endswith(")"):
+                task_return =pageExtractor(response[4:-1])
+
+            pastMessages.append({"role": "program", "content": task_return})
+        except openai.error.RateLimitError:
+            print(
+                "The OpenAI API rate limit has been exceeded. Waiting 10 seconds and trying again."
+            )
+            time.sleep(10)
+                
 
 def context_agent(query: str, n: int):
     query_embedding = get_ada_embedding(query)
