@@ -232,7 +232,8 @@ def execution_agent(objective: str, task: str) -> str:
     prompt = f"""
     You are an AI who performs one task based on the following objective: {objective}\n.
     Take into account these previously completed tasks: {context}\n.
-    You can only answer with RETURN(<value>) when your task is complete with the value you want to return. You can also use BASH(<command>) to execute a bash command and return the output. You can also use WEB(<url>) to extract the text from a webpage.
+    You can only answer with RETURN["The return value"] when your task is complete with the value you want to return. You can also use BASH["command to execute"] to execute a bash command and get the output. You can also use WEB["URRL to fetch"] to extract the text from a webpage.
+    You are not allowed to anser anything else than the above commands.
     Any input I give you after this prompt will be the result of the command you execute.
     The commands are executed on an Ubuntu 20.04 server.
     Your task: {task}\nResponse:"""
@@ -247,11 +248,11 @@ def execution_agent(objective: str, task: str) -> str:
             print(response)
             pastMessages.append({"role": "assistant", "content": response})
             task_return = ""
-            if response.startswith("RETURN(") and response.endswith(")"):
+            if response.startswith("RETURN[") and response.endswith("]"):
                 return response[7:-1]
-            elif response.startswith("BASH(") and response.endswith(")"):
+            elif response.startswith("BASH[") and response.endswith("]"):
                 task_return = bashExecuter(response[5:-1])
-            elif response.startswith("WEB(") and response.endswith(")"):
+            elif response.startswith("WEB[") and response.endswith("]"):
                 task_return =pageExtractor(response[4:-1])
 
             pastMessages.append({"role": "user", "content": task_return})
