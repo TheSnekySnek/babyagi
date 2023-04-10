@@ -254,6 +254,8 @@ def execution_agent(objective: str, task: str) -> str:
                 task_return = bashExecuter(response[5:-1])
             elif response.startswith("WEB[") and response.endswith("]"):
                 task_return =pageExtractor(response[4:-1])
+            else:
+                task_return = "ERROR: Invalid command"
 
             pastMessages.append({"role": "user", "content": task_return})
         except openai.error.RateLimitError:
