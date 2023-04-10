@@ -236,7 +236,7 @@ def execution_agent(objective: str, task: str) -> str:
     Any input I give you after this prompt will be the result of the command you execute.
     The commands are executed on an Ubuntu 20.04 server.
     Your task: {task}\nResponse:"""
-    pastMessages = [{"role": "system", "content": prompt}]
+    pastMessages = [{"role": "user", "content": prompt}]
     while True:
         try:
             response = openai.ChatCompletion.create(
